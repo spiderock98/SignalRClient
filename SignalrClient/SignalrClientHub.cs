@@ -16,7 +16,7 @@ public class SignalrClientHub
         // Configure and build the HubConnection
         var connection = new HubConnectionBuilder()
             .WithUrl(conn)
-            .WithAutomaticReconnect()
+            .WithAutomaticReconnect(Enumerable.Repeat(TimeSpan.FromSeconds(1), (int)TimeSpan.FromMinutes(30).TotalSeconds).ToArray())
             .Build();
 
         return connection;
