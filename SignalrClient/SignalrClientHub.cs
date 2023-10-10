@@ -16,27 +16,42 @@ public class SignalrClientHub
         // Configure and build the HubConnection
         var connection = new HubConnectionBuilder()
             .WithUrl(conn)
-            .WithAutomaticReconnect(Enumerable.Repeat(TimeSpan.FromSeconds(1), (int)TimeSpan.FromMinutes(30).TotalSeconds).ToArray())
             .Build();
+
+        connection.Closed += async exception =>
+        {
+            Console.WriteLine(exception != default
+                ? $"[ERR] Connection closed: {exception.Message}"
+                : "[INFO] Connection closed without error.");
+
+            while (true)
+            {
+                if (await StartAsync()) break;
+                await Task.Delay((int)TimeSpan.FromSeconds(5).TotalMilliseconds);
+            }
+        };
 
         return connection;
     }
 
-    public void RegisterEvent<T>(string eventName, Action<T> callback)
+    public void Register<T>(string eventName, Action<T> callback)
     {
-        _connection.On<T>(eventName, items => callback(items));
+        _connection.On(eventName, callback);
     }
 
-    public async Task StartAsync()
+    public async Task<bool> StartAsync()
     {
         try
         {
             await _connection.StartAsync();
-            Console.WriteLine("Connection started successfully.");
+            Console.WriteLine("[INFO] Connection started successfully.");
+            return true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error starting connection: {ex.Message}");
+            Console.WriteLine($"[ERR] Starting connection: {ex.Message}");
         }
+
+        return false;
     }
 }

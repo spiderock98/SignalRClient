@@ -17,7 +17,7 @@ namespace SignalRClient
             var hubClient = new SignalrClientHub(connectionUrl);
 
             // Register the "ReceiveMsg" event handler
-            hubClient.RegisterEvent<IEnumerable<DataModel>>("ReceiveMsg", OnRecv);
+            hubClient.Register<IEnumerable<DataModel>>("ReceiveMsg", OnRecv);
 
             await hubClient.StartAsync();
             
