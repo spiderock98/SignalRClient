@@ -5,7 +5,7 @@ namespace SignalrClient;
 public class SignalrClientHub
 {
     public HubConnection Connection { get; }
-    public event EventHandler ConnectionRestored;
+    public event EventHandler Connected;
 
     public SignalrClientHub(string connectionUrl)
     {
@@ -37,7 +37,7 @@ public class SignalrClientHub
             {
                 if (await StartAsync())
                 {
-                    ConnectionRestored(this, EventArgs.Empty);
+                    Connected(this, EventArgs.Empty);
                     break;
                 }
                 await Task.Delay((int)TimeSpan.FromSeconds(5).TotalMilliseconds);
@@ -57,7 +57,7 @@ public class SignalrClientHub
         try
         {
             await Connection.StartAsync();
-            ConnectionRestored(this, EventArgs.Empty);
+            Connected(this, EventArgs.Empty);
             Console.WriteLine("[INFO] Connection started successfully.");
             return true;
         }

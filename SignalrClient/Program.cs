@@ -38,7 +38,7 @@ namespace SignalRClient
 
                 return Task.CompletedTask;
             };
-            hubClient.ConnectionRestored += (_, _) =>
+            hubClient.Connected += (_, _) =>
             {
                 // Do something
             };
