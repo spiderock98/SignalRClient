@@ -14,13 +14,40 @@ namespace SignalRClient
 
             // Initialize HubConnection
             const string connectionUrl = "http://localhost:5002/signalrhub";
+            // const string connectionUrl = "https://takako.viotapp.cloud/signalrhub";
             var hubClient = new SignalrClientHub(connectionUrl);
 
             // Register the "ReceiveMsg" event handler
             hubClient.Register<IEnumerable<DataModel>>("ReceiveMsg", OnRecv);
 
+            // Add event callback
+            hubClient.Connection.Closed += _ =>
+            {
+                // Do something
+                return Task.CompletedTask;
+            };
+            hubClient.Connection.Reconnecting += _ =>
+            {
+                // Do something
+
+                return Task.CompletedTask;
+            };
+            hubClient.Connection.Reconnected += _ =>
+            {
+                // Do something
+
+                return Task.CompletedTask;
+            };
+            hubClient.ConnectionRestored += (_, _) =>
+            {
+                // Do something
+            };
+
+            // start signalr server connection
             await hubClient.StartAsync();
+
             
+            // Stop program here
             Console.ReadLine();
         }
 

@@ -4,18 +4,27 @@ namespace SignalrClient;
 
 public class SignalrClientHub
 {
-    private readonly HubConnection _connection;
+    public HubConnection Connection { get; }
+    public event EventHandler ConnectionRestored;
 
     public SignalrClientHub(string connectionUrl)
     {
-        _connection = InitHubConnection(connectionUrl);
+        Connection = InitHubConnection(connectionUrl);
     }
 
     private HubConnection InitHubConnection(string conn)
     {
         // Configure and build the HubConnection
         var connection = new HubConnectionBuilder()
-            .WithUrl(conn)
+            .WithUrl(conn, options =>
+            {
+                // options.Headers["Authorization"] =
+                //     "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiU3lzdGVtIiwibmJmIjoxNjk2OTEzODc0LCJleHAiOjE2OTc1MTg2NzQsImlhdCI6MTY5NjkxMzg3NH0.-4Gd7JFSDoaJCPbECMPvZezIGz2AdwRWMc4NALczdxg";
+                
+                // options.AccessTokenProvider = () => Task.FromResult(
+                //         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiU3lzdGVtIiwibmJmIjoxNjk2OTEzODc0LCJleHAiOjE2OTc1MTg2NzQsImlhdCI6MTY5NjkxMzg3NH0.-4Gd7JFSDoaJCPbECMPvZezIGz2AdwRWMc4NALczdxg");
+            })
+            // .WithAutomaticReconnect()
             .Build();
 
         connection.Closed += async exception =>
@@ -26,7 +35,11 @@ public class SignalrClientHub
 
             while (true)
             {
-                if (await StartAsync()) break;
+                if (await StartAsync())
+                {
+                    ConnectionRestored(this, EventArgs.Empty);
+                    break;
+                }
                 await Task.Delay((int)TimeSpan.FromSeconds(5).TotalMilliseconds);
             }
         };
@@ -36,14 +49,15 @@ public class SignalrClientHub
 
     public void Register<T>(string eventName, Action<T> callback)
     {
-        _connection.On(eventName, callback);
+        Connection.On(eventName, callback);
     }
 
     public async Task<bool> StartAsync()
     {
         try
         {
-            await _connection.StartAsync();
+            await Connection.StartAsync();
+            ConnectionRestored(this, EventArgs.Empty);
             Console.WriteLine("[INFO] Connection started successfully.");
             return true;
         }
