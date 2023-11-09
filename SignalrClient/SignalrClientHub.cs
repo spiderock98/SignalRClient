@@ -33,23 +33,38 @@ public class SignalrClientHub
                 ? $"[ERR] Connection closed: {exception.Message}"
                 : "[INFO] Connection closed without error.");
 
-            while (true)
-            {
-                if (await StartAsync())
-                {
-                    if (Connected != default)
-                    {
-                        Connected(this, EventArgs.Empty);
-                    }
-
-                    break;
-                }
-
-                await Task.Delay((int)TimeSpan.FromSeconds(5).TotalMilliseconds);
-            }
+            await ReConnectHandle(null);
         };
 
         return connection;
+    }
+
+    /// <summary>
+    /// Loop retry until the timeout has elapsed or timeout is null (infinite timeout)
+    /// </summary>
+    private async Task<bool> ReConnectHandle(TimeSpan? timeout)
+    {
+        var preTick = DateTime.Now;
+        var flagTimeout = true;
+        
+        while (timeout.HasValue == false || DateTime.Now - preTick < timeout.Value)
+        {
+            if (await StartAsync())
+            {
+                if (Connected != default)
+                {
+                    Connected(this, EventArgs.Empty);
+                }
+
+                flagTimeout = false;
+                break;
+            }
+
+            // delay before retry
+            await Task.Delay((int)TimeSpan.FromSeconds(5).TotalMilliseconds);
+        }
+
+        return !flagTimeout;
     }
 
     public void Register<T>(string eventName, Action<T> callback)
@@ -73,6 +88,8 @@ public class SignalrClientHub
         catch (Exception ex)
         {
             Console.WriteLine($"[ERR] Starting connection: {ex.Message}");
+
+            ReConnectHandle(TimeSpan.FromMinutes(1));
         }
 
         return false;
