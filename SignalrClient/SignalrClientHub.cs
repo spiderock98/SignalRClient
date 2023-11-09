@@ -20,7 +20,7 @@ public class SignalrClientHub
             {
                 // options.Headers["Authorization"] =
                 //     "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiU3lzdGVtIiwibmJmIjoxNjk2OTEzODc0LCJleHAiOjE2OTc1MTg2NzQsImlhdCI6MTY5NjkxMzg3NH0.-4Gd7JFSDoaJCPbECMPvZezIGz2AdwRWMc4NALczdxg";
-                
+
                 // options.AccessTokenProvider = () => Task.FromResult(
                 //         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiU3lzdGVtIiwibmJmIjoxNjk2OTEzODc0LCJleHAiOjE2OTc1MTg2NzQsImlhdCI6MTY5NjkxMzg3NH0.-4Gd7JFSDoaJCPbECMPvZezIGz2AdwRWMc4NALczdxg");
             })
@@ -37,9 +37,14 @@ public class SignalrClientHub
             {
                 if (await StartAsync())
                 {
-                    Connected(this, EventArgs.Empty);
+                    if (Connected != default)
+                    {
+                        Connected(this, EventArgs.Empty);
+                    }
+
                     break;
                 }
+
                 await Task.Delay((int)TimeSpan.FromSeconds(5).TotalMilliseconds);
             }
         };
@@ -57,7 +62,11 @@ public class SignalrClientHub
         try
         {
             await Connection.StartAsync();
-            Connected(this, EventArgs.Empty);
+            if (Connected != default)
+            {
+                Connected(this, EventArgs.Empty);
+            }
+
             Console.WriteLine("[INFO] Connection started successfully.");
             return true;
         }
@@ -67,5 +76,19 @@ public class SignalrClientHub
         }
 
         return false;
+    }
+
+    public async Task<bool> SendMessage<T>(string methodName, T msg)
+    {
+        try
+        {
+            await Connection.SendAsync(methodName, msg);
+            return true;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+            return false;
+        }
     }
 }
