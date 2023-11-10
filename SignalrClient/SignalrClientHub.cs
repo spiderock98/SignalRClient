@@ -30,8 +30,8 @@ public class SignalrClientHub
         connection.Closed += async exception =>
         {
             Console.WriteLine(exception != default
-                ? $"[ERR] Connection closed: {exception.Message}"
-                : "[INFO] Connection closed without error.");
+                ? $"[ERR][SignalR] Connection closed: {exception.Message}"
+                : "[INFO][SignalR] Connection closed without error.");
 
             await ReConnectHandle(null);
         };
@@ -82,14 +82,14 @@ public class SignalrClientHub
                 Connected(this, EventArgs.Empty);
             }
 
-            Console.WriteLine("[INFO] Connection started successfully.");
+            Console.WriteLine("[INFO][SignalR] Connection started successfully.");
             return true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ERR] Starting connection: {ex.Message}");
+            Console.WriteLine($"[Err][SignalR] Starting connection: {ex.Message}");
 
-            ReConnectHandle(TimeSpan.FromMinutes(1));
+            // await ReConnectHandle(TimeSpan.FromMinutes(1));
         }
 
         return false;
@@ -104,7 +104,7 @@ public class SignalrClientHub
         }
         catch (Exception e)
         {
-            Console.WriteLine(e.Message);
+            Console.WriteLine($"[Err][SignalR] {e.Message}");
             return false;
         }
     }
