@@ -9,10 +9,75 @@ public class SignalrClientHub
 
     public SignalrClientHub(string connectionUrl)
     {
-        Connection = InitHubConnection(connectionUrl);
+        Connection = InitHubConnection(connectionUrl, true);
     }
 
-    private HubConnection InitHubConnection(string conn)
+    public void Register<T>(string eventName, Action<T> callback)
+    {
+        Connection.On(eventName, callback);
+    }
+
+    public async Task<bool> StartConnectionAsync()
+    {
+        var connStatus = await Start();
+        while (!connStatus)
+        {
+            connStatus = await ReConnectHandle(TimeSpan.FromMinutes(1));
+        }
+
+        return true;
+    }
+
+    public async Task<bool> SendMessage<T>(string methodName, T msg)
+    {
+        try
+        {
+            await Connection.SendAsync(methodName, msg);
+            return true;
+        }
+        catch (Exception e)
+        {
+#if DEBUG
+            Console.WriteLine($"[Err][SignalR] {e.Message}");
+#endif
+            return false;
+        }
+    }
+
+    #region Private Function
+
+    /// <summary>
+    /// Start connecting to server
+    /// </summary>
+    /// <returns></returns>
+    private async Task<bool> Start()
+    {
+        try
+        {
+            await Connection.StartAsync();
+            if (Connected != default)
+            {
+                Connected(this, EventArgs.Empty);
+            }
+#if DEBUG
+            Console.WriteLine("[INFO][SignalR] Connection started successfully.");
+#endif
+            return true;
+        }
+        catch (Exception ex)
+        {
+#if DEBUG
+            Console.WriteLine($"[ERR][SignalR] Starting connection: {ex.Message}");
+#endif
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Cretae new connection instance
+    /// </summary>
+    private HubConnection InitHubConnection(string conn, bool autoreconnect)
     {
         // Configure and build the HubConnection
         var connection = new HubConnectionBuilder()
@@ -27,14 +92,18 @@ public class SignalrClientHub
             // .WithAutomaticReconnect()
             .Build();
 
-        connection.Closed += async exception =>
+        if (autoreconnect)
         {
-            Console.WriteLine(exception != default
-                ? $"[ERR][SignalR] Connection closed: {exception.Message}"
-                : "[INFO][SignalR] Connection closed without error.");
-
-            await ReConnectHandle(null);
-        };
+            connection.Closed += async exception =>
+            {
+#if DEBUG
+                Console.WriteLine(exception != default
+                    ? $"[ERR][SignalR] Connection closed: {exception.Message}"
+                    : "[INFO][SignalR] Connection closed without error.");
+#endif
+                await ReConnectHandle(null);
+            };
+        }
 
         return connection;
     }
@@ -46,10 +115,10 @@ public class SignalrClientHub
     {
         var preTick = DateTime.Now;
         var flagTimeout = true;
-        
+
         while (timeout.HasValue == false || DateTime.Now - preTick < timeout.Value)
         {
-            if (await StartAsync())
+            if (await Start())
             {
                 if (Connected != default)
                 {
@@ -67,45 +136,5 @@ public class SignalrClientHub
         return !flagTimeout;
     }
 
-    public void Register<T>(string eventName, Action<T> callback)
-    {
-        Connection.On(eventName, callback);
-    }
-
-    public async Task<bool> StartAsync()
-    {
-        try
-        {
-            await Connection.StartAsync();
-            if (Connected != default)
-            {
-                Connected(this, EventArgs.Empty);
-            }
-
-            Console.WriteLine("[INFO][SignalR] Connection started successfully.");
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[Err][SignalR] Starting connection: {ex.Message}");
-
-            // await ReConnectHandle(TimeSpan.FromMinutes(1));
-        }
-
-        return false;
-    }
-
-    public async Task<bool> SendMessage<T>(string methodName, T msg)
-    {
-        try
-        {
-            await Connection.SendAsync(methodName, msg);
-            return true;
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine($"[Err][SignalR] {e.Message}");
-            return false;
-        }
-    }
+    #endregion
 }

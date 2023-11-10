@@ -46,7 +46,7 @@ namespace SignalRClient
             };
 
             // start signalr server connection
-            await hubClient.StartAsync();
+            await hubClient.StartConnectionAsync();
             
             // send test message to server
             Console.WriteLine("Sending new message");
