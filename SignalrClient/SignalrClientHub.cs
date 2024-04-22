@@ -16,6 +16,11 @@ public class SignalrClientHub
     {
         Connection.On(eventName, callback);
     }
+    
+    public void Register_v2<T>(string eventName, Func<T, object> cb)
+    {
+        Connection.On(eventName, cb);
+    }
 
     public async Task<bool> StartConnectionAsync()
     {

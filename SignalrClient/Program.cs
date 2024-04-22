@@ -13,14 +13,19 @@ namespace SignalRClient
             Console.WriteLine("Program started ....");
 
             // Initialize HubConnection
-            // const string connectionUrl = "http://localhost:5002/signalrhub";
-            const string connectionUrl = "http://localhost:5002/systemnotificationhub";
-            
+            const string connectionUrl = "http://localhost:5093/signalrhub";
+            // const string connectionUrl = "http://localhost:5002/systemnotificationhub";
+
             // const string connectionUrl = "https://takako.viotapp.cloud/signalrhub";
             var hubClient = new SignalrClientHub(connectionUrl);
 
             // Register the "ReceiveMsg" event handler
-            hubClient.Register<IEnumerable<GsmModel>>("ReceiveMsg", OnRecv);
+            // hubClient.Register<IEnumerable<GsmModel>>("ReceiveMsg", OnRecv);
+            hubClient.Register_v2<object>("ReceiveMsg", s =>
+            {
+                Console.WriteLine(JsonSerializer.Serialize(s));
+                return new { Message = "I see you", Code = 200 };
+            });
 
             // Add event callback
             hubClient.Connection.Closed += _ =>
@@ -47,12 +52,12 @@ namespace SignalRClient
 
             // start signalr server connection
             await hubClient.StartConnectionAsync();
-            
+
             // send test message to server
             Console.WriteLine("Sending new message");
             await hubClient.SendMessage("OnMessageArrive", "haha");
 
-            
+
             // Stop program here
             Console.ReadLine();
         }
